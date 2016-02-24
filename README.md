@@ -3,7 +3,6 @@
 Simple framework to play around with different reinforcement learning techniques in tetris.
 
 
-# tetris
 ### Original tetris by Charles Leifer
 ======
 
