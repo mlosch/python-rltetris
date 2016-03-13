@@ -2,7 +2,7 @@ import pyglet
 from pyglet.window import key
 from lib.Board import Board
 from lib.Game import RLGame
-from lib.Learning import QLearner
+from lib.Learning import QLearner, SarsaLambdaLearner
 from lib.util import Scoreplot
 import cPickle as pickle
 import glob
@@ -12,7 +12,7 @@ global lastscores
 lastgame = 0
 lastscores = [0]
 
-DRAW = True
+DRAW = False
 PLOT = False
 iteration = 0
 maxscore = 0
@@ -49,7 +49,8 @@ if PLOT:
     plot.newscore(0)
 
 game = RLGame(window, board, 1)
-learner = QLearner(board, game)
+#learner = QLearner(board, game, epsilon=0)
+learner = SarsaLambdaLearner(board, game, learningrate=0.1, epsilon=0.0, lam=0.99)
 
 # Load an existing policy if available
 files = glob.glob('policy-*.pickle')
@@ -75,7 +76,7 @@ if DRAW:
 
 def update(dt):
     # do some serious learning here
-    action = learner.nextaction()
+    action = learner.step()
     # print('Chosen action: '+ACTIONNAMES[action])
     board.move_piece(action)
 
@@ -84,6 +85,11 @@ def update(dt):
 
     global lastgame
     global lastscores
+
+    if game.lines > 0 and game.lines != lastscores[-1]:
+        # announce new piece to learner
+        learner.newpiece()
+
     if game.lines > 0:
         if game.lines != lastscores[-1]:
             if PLOT:
@@ -100,12 +106,14 @@ def update(dt):
                 board.reset()
                 learner.reset()
     if game._gamecounter > lastgame:
-        if PLOT:
-            plot.updatescore(lastscores[-1])
-            plot.newscore(0)
         lastgame = game._gamecounter
-        if game._gamecounter % 1000 == 0:
-            print('Game: %d, Min score: %d, Max score: %d, Avg score: %f'%(game._gamecounter, min(lastscores), max(lastscores), sum(lastscores)/float(len(lastscores))))
+        if game._gamecounter % 100 == 0:
+            avgscore = sum(lastscores)/float(len(lastscores))
+            if PLOT:
+                plot.newscore(lastgame, avgscore)
+
+            print('Game: %d, Min score: %d, Max score: %d, Avg score: %f'%(game._gamecounter, min(lastscores), max(lastscores), avgscore))
+            #print('Track length: %d'%len(learner.track))
             lastscores = []
         lastscores.append(0)
     # plot.plot()
