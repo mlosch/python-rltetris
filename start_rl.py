@@ -13,6 +13,7 @@ lastgame = 0
 lastscores = [0]
 
 DRAW = False
+UPDATE_INTERVAL = 0.1
 PLOT = False
 iteration = 0
 maxscore = 0
@@ -46,11 +47,11 @@ else:
 board = Board(BOARD_WIDTH, BOARD_HEIGHT, block)
 if PLOT:
     plot = Scoreplot()
-    plot.newscore(0)
+    #plot.newscore(0,0)
 
 game = RLGame(window, board, 1)
-#learner = QLearner(board, game, epsilon=0)
-learner = SarsaLambdaLearner(board, game, learningrate=0.1, epsilon=0.0, lam=0.99)
+learner = QLearner(board, game, learningrate=0.1, epsilon=0)
+#learner = SarsaLambdaLearner(board, game, learningrate=0.1, epsilon=0.0, lam=0.99)
 
 # Load an existing policy if available
 files = glob.glob('policy-*.pickle')
@@ -77,12 +78,13 @@ if DRAW:
 def update(dt):
     # do some serious learning here
     action = learner.step()
-    # print('Chosen action: '+ACTIONNAMES[action])
+    # perform the action on the board
     board.move_piece(action)
 
     # update game
     game.cycle()
 
+    # collect statistics
     global lastgame
     global lastscores
 
@@ -92,11 +94,7 @@ def update(dt):
 
     if game.lines > 0:
         if game.lines != lastscores[-1]:
-            if PLOT:
-                plot.updatescore(lastscores[-1])
             lastscores[-1] = game.lines
-            if PLOT:
-                plot.plot()
 
             maxscorebound = 1000
             if lastscores[-1] >= maxscorebound:
@@ -105,12 +103,14 @@ def update(dt):
                 game.manualreset()
                 board.reset()
                 learner.reset()
+
     if game._gamecounter > lastgame:
         lastgame = game._gamecounter
         if game._gamecounter % 100 == 0:
             avgscore = sum(lastscores)/float(len(lastscores))
             if PLOT:
                 plot.newscore(lastgame, avgscore)
+                plot.plot()
 
             print('Game: %d, Min score: %d, Max score: %d, Avg score: %f'%(game._gamecounter, min(lastscores), max(lastscores), avgscore))
             #print('Track length: %d'%len(learner.track))
@@ -120,7 +120,7 @@ def update(dt):
 
 try:
     if DRAW:
-        pyglet.clock.schedule_interval(update, 0.005)
+        pyglet.clock.schedule_interval(update, UPDATE_INTERVAL)
         pyglet.app.run()
     else:
         while 1:

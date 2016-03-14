@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import matplotlib.animation as animation
 import time
 import random
 
@@ -34,11 +35,17 @@ class Scoreplot(object):
     def __init__(self):
         self.scores = []
         self.x = []
+        #plt.ion()
         self.fig = plt.figure()
+        self.graph = plt.plot(self.x, self.scores)[0]
         plt.xlabel('Game')
         plt.ylabel('Avg Score')
-        plt.ion()
-        plt.show()
+        self.curve = animation.FuncAnimation(self.fig, self._updateline, 25, fargs=(self.graph,), interval=100, blit=True)
+        #plt.show()
+
+    def _updateline(self, num, line):
+        line.set_ydata(self.scores)
+        line.set_xdata(self.x)
 
     def newscore(self, game, score):
         self.scores.append(score)
@@ -49,10 +56,23 @@ class Scoreplot(object):
         self.scores[game] = score
 
     def plot(self):
-        # plt.figure(self.fig.number)
-        self.fig.clear()
-        plt.xlabel('Game')
-        plt.ylabel('Score')
-        plt.plot(self.x, self.scores)
-        plt.draw()
-        time.sleep(0.01)
+        pass
+        # # plt.figure(self.fig.number)
+        # #self.fig.clear()
+        # #plt.xlabel('Game')
+        # #plt.ylabel('Avg Score')
+        # #plt.plot(self.x, self.scores)
+        #
+        # self.graph.set_ydata(self.scores)
+        # self.graph.set_xdata(self.x)
+        # plt.draw()
+        # plt.pause(0.1)
+
+
+# l, = plt.plot([], [], 'r-')
+# plt.xlim(0, 1)
+# plt.ylim(0, 1)
+# plt.xlabel('x')
+# plt.title('test')
+# line_ani = animation.FuncAnimation(fig1, update_line, 25, fargs=(data, l),
+#     interval=50, blit=True)
