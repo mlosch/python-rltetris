@@ -67,7 +67,7 @@ class RLGame(Game, WorldFeedback):
     _gamecounter = 0
 
     REWARD_LINE = 1.0
-    REWARD_GAMEOVER = -10.0
+    REWARD_GAMEOVER = 0  # -10.0
 
     def getreward(self):
         reward = self._rewardcarriage
