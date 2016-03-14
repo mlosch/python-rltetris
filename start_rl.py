@@ -7,14 +7,32 @@ from lib.util import Scoreplot
 import cPickle as pickle
 import glob
 
+
+"""
+Things to play around with:
+Checkout the following files for further adjustable parameters: Shape.py, Game.py, Learning.py
+
+Change DRAW to True, to see the agent play.
+Change the UPDATE_INTERVAL (in seconds) to define how many moves the agent can make per second.
+Change PLOT to True, to draw a plot showing the average reward over games.
+
+Change BOARD_WIDTH and BOARD_HEIGHT to define the size of the game board.
+
+Change learner (in the middle of this file) to define which algorithm is used ( currently either Q or SARSA(lambda) )
+"""
+DRAW = False
+UPDATE_INTERVAL = 0.1
+PLOT = False
+
+BOARD_WIDTH = 6
+BOARD_HEIGHT = 12
+
+
 global lastgame
 global lastscores
 lastgame = 0
 lastscores = [0]
 
-DRAW = False
-UPDATE_INTERVAL = 0.1
-PLOT = False
 iteration = 0
 maxscore = 0
 
@@ -27,10 +45,6 @@ ACTIONNAMES = {
     key.MOTION_UP: 'Rotate',
     key.MOTION_DOWN: 'Move Down',
 }
-
-# these are the dimensions from the gameboy version
-BOARD_WIDTH = 6
-BOARD_HEIGHT = 12
 
 block = pyglet.image.load(BLOCK_IMG_FILE)
 block_sprite = pyglet.sprite.Sprite(block)
@@ -50,8 +64,9 @@ if PLOT:
     #plot.newscore(0,0)
 
 game = RLGame(window, board, 1)
-learner = QLearner(board, game, learningrate=0.1, epsilon=0)
-#learner = SarsaLambdaLearner(board, game, learningrate=0.1, epsilon=0.0, lam=0.99)
+# 0.7, 0.99, 0.5
+learner = QLearner(board, game, learningrate=0.1, epsilon=0.0, discountfactor=0.7)
+#learner = SarsaLambdaLearner(board, game, learningrate=0.1, epsilon=0.0, lam=0.9, discountfactor=0.9)
 
 # Load an existing policy if available
 files = glob.glob('policy-*.pickle')

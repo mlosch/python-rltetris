@@ -2,6 +2,10 @@ import random
 
 
 class Shape(object):
+    """
+    Change here the shapes that the agent is supposed to play with.
+    """
+    # # Default Tetris set:
     # _shapes = [
     #     [[0, 1, 0, 0], [0, 1, 0, 0], [0, 1, 0, 0], [0, 1, 0, 0]],
     #     [[0, 0, 0, 0], [0, 1, 1, 0], [0, 1, 1, 0], [0, 0, 0, 0]],
@@ -11,7 +15,7 @@ class Shape(object):
     #     [[0, 0, 0, 0], [0, 1, 0, 0], [0, 1, 1, 0], [0, 0, 1, 0]],
     # ]
 
-    # Only 2x2 block:
+    # # Only 2x2 block:
     # _shapes = [
     #     [[0,0,0,0], [0,1,1,0], [0,1,1,0], [0,0,0,0]],
     # ]
@@ -21,6 +25,7 @@ class Shape(object):
         [[0,0,0,0], [0,1,0,0], [0,1,1,0], [0,0,0,0]],
     ]
 
+    # # Collection of 2x2 blocks
     # _shapes = [
     #     [[0,0,0,0], [0,1,0,0], [0,1,1,0], [0,0,0,0]],
     #     [[0,0,0,0], [0,1,1,0], [0,1,1,0], [0,0,0,0]],

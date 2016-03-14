@@ -63,11 +63,16 @@ class Game(object):
 
 class RLGame(Game, WorldFeedback):
 
-    _rewardcarriage = 0
-    _gamecounter = 0
-
+    """
+    Change REWARD_LINE to give a reward when a line is complete.
+    Change REWARD_GAMEOVER to give a negative reward when the topmost line has reached the game ceiling
+    """
     REWARD_LINE = 1.0
     REWARD_GAMEOVER = 0  # -10.0
+
+
+    _rewardcarriage = 0
+    _gamecounter = 0
 
     def getreward(self):
         reward = self._rewardcarriage

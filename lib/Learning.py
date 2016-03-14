@@ -52,6 +52,8 @@ class QLearner(object):
             return np.argmax(self.policy[state])
 
     def _updatevalue(self, state, action, reward):
+        # Q-Learning always updates with the argmax action:
+        action = np.argmax(self.policy[state])
         self.policy[self.lastState][self.lastAction] += self.lr * (reward + self.gamma * self.policy[state][action] - self.policy[self.lastState][self.lastAction])
 
     def step(self):
@@ -77,7 +79,16 @@ class QLearner(object):
         return self._moves[action]
 
 
+class SarsaLearner(QLearner):
+    def _updatevalue(self, state, action, reward):
+        # SARSA-Learning always updates with the chosen action:
+        self.policy[self.lastState][self.lastAction] += self.lr * (reward + self.gamma * self.policy[state][action] - self.policy[self.lastState][self.lastAction])
+
+
 class SarsaLambdaLearner(QLearner):
+    """
+    Implements SARSA with eligibility traces.
+    """
     def __init__(self, board, worldfeedback, learningrate=0.01, discountfactor=0.6, epsilon=0.1, lam=0.9):
         self.lam = lam
         #self.e = {}
