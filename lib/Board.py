@@ -47,7 +47,7 @@ class Board(pyglet.event.EventDispatcher):
         if rotated_shape.bottom_edge + rotated_shape.y > self.height:
             return False
 
-        if not self.is_collision(rotated_shape):
+        if not self.check_bottom(rotated_shape) and not self.is_collision(rotated_shape):
             self.active_shape = rotated_shape
 
     def move_left(self):
