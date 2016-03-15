@@ -7,8 +7,8 @@ from lib.Game import Game
 BLOCK_IMG_FILE = 'img/block.png'
 
 # these are the dimensions from the gameboy version
-BOARD_WIDTH = 12
-BOARD_HEIGHT = 12
+BOARD_WIDTH = 14
+BOARD_HEIGHT = 20
 
 block = pyglet.image.load(BLOCK_IMG_FILE)
 block_sprite = pyglet.sprite.Sprite(block)
