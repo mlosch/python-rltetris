@@ -64,9 +64,9 @@ if PLOT:
     #plot.newscore(0,0)
 
 game = RLGame(window, board, 1)
-# 0.7, 0.99, 0.5
-learner = QLearner(board, game, learningrate=0.1, epsilon=0.0, discountfactor=0.7)
-#learner = SarsaLambdaLearner(board, game, learningrate=0.1, epsilon=0.0, lam=0.9, discountfactor=0.9)
+#learner = SarsaLearner(board, game, learningrate=0.1, epsilon=0.0, discountfactor=0.7)
+#learner = QLearner(board, game, learningrate=0.1, epsilon=0.05, discountfactor=0.7)
+learner = SarsaLambdaLearner(board, game, learningrate=0.1, epsilon=0.0, lam=0.9, discountfactor=0.7)
 
 # Load an existing policy if available
 files = glob.glob('policy-*.pickle')
