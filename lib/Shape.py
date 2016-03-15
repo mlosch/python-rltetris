@@ -26,12 +26,12 @@ class Shape(object):
     ]
 
     # # Collection of 2x2 blocks
-    # _shapes = [
-    #     [[0,0,0,0], [0,1,0,0], [0,1,1,0], [0,0,0,0]],
-    #     [[0,0,0,0], [0,1,1,0], [0,1,1,0], [0,0,0,0]],
-    #     # [[0,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,0]],
-    #     [[0,0,0,0], [0,0,1,0], [0,0,1,0], [0,0,0,0]],
-    # ]
+    _shapes = [
+        [[0,0,0,0], [0,1,0,0], [0,1,1,0], [0,0,0,0]],
+        [[0,0,0,0], [0,1,1,0], [0,1,1,0], [0,0,0,0]],
+        # [[0,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,0]],
+        [[0,0,0,0], [0,0,1,0], [0,0,1,0], [0,0,0,0]],
+    ]
 
     BLOCK_EMPTY = 0
     BLOCK_FULL = 1
@@ -65,11 +65,11 @@ class Shape(object):
         return cloned
 
     def rotate(self):
-        self.rotationidx = (self.rotationidx + 1) % 4
         new_shape = self.copy_shape()
         for j in range(0, 4):
             for i in range(0, 4):
                 new_shape[i][j] = self.shape[4 - j - 1][i]
+        self.rotationidx = (self.rotationidx + 1) % 4
         self.shape = new_shape
 
     @property

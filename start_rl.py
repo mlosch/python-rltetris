@@ -61,7 +61,6 @@ else:
 board = Board(BOARD_WIDTH, BOARD_HEIGHT, block)
 if PLOT:
     plot = Scoreplot()
-    #plot.newscore(0,0)
 
 game = RLGame(window, board, 1)
 #learner = SarsaLearner(board, game, learningrate=0.1, epsilon=0.0, discountfactor=0.7)
@@ -128,7 +127,6 @@ def update(dt):
                 plot.plot()
 
             print('Game: %d, Min score: %d, Max score: %d, Avg score: %f'%(game._gamecounter, min(lastscores), max(lastscores), avgscore))
-            #print('Track length: %d'%len(learner.track))
             lastscores = []
         lastscores.append(0)
     # plot.plot()
