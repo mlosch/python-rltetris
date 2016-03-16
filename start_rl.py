@@ -2,7 +2,7 @@ import pyglet
 from pyglet.window import key
 from lib.Board import Board
 from lib.Game import RLGame
-from lib.Learning import QLearner, SarsaLambdaLearner
+from lib.Learning import QLearner, SarsaLambdaLearner, DeepQLearner
 from lib.util import Scoreplot
 import cPickle as pickle
 import glob
@@ -20,7 +20,7 @@ Change BOARD_WIDTH and BOARD_HEIGHT to define the size of the game board.
 
 Change learner (in the middle of this file) to define which algorithm is used ( currently either Q or SARSA(lambda) )
 """
-DRAW = False
+DRAW = True
 UPDATE_INTERVAL = 0.1
 PLOT = False
 
@@ -65,7 +65,8 @@ if PLOT:
 game = RLGame(window, board, 1)
 #learner = SarsaLearner(board, game, learningrate=0.1, epsilon=0.0, discountfactor=0.7)
 #learner = QLearner(board, game, learningrate=0.1, epsilon=0.05, discountfactor=0.7)
-learner = SarsaLambdaLearner(board, game, learningrate=0.1, epsilon=0.0, lam=0.9, discountfactor=0.7)
+#learner = SarsaLambdaLearner(board, game, learningrate=0.1, epsilon=0.0, lam=0.9, discountfactor=0.7)
+learner = DeepQLearner(board, game, learningrate=0.0002, discountfactor=0.95)
 
 # Load an existing policy if available
 files = glob.glob('policy-*.pickle')

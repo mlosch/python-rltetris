@@ -1,5 +1,6 @@
 from Learning import WorldFeedback
 
+
 class Game(object):
     ticks = 0
     factor = 4

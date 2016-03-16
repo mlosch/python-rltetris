@@ -2,6 +2,7 @@ from Shape import Shape
 import pyglet
 from pyglet.window import key
 from util import num2base36
+import numpy as np
 
 
 class Board(pyglet.event.EventDispatcher):
@@ -190,6 +191,18 @@ class Board(pyglet.event.EventDispatcher):
                     self.board[dy][dx] = Shape.BLOCK_EMPTY
 
         return ''.join(flags)
+
+    def encode_image(self):
+        arr = np.asarray(self.board, dtype=np.float32)
+
+        for y in range(4):
+            for x in range(4):
+                dx = x + self.active_shape.x
+                dy = y + self.active_shape.y
+                if self.active_shape.shape[y][x] == Shape.BLOCK_FULL:
+                    arr[dy][dx] = Shape.BLOCK_FULL
+
+        return arr
 
     def encode_only_static(self):
         flags = []
