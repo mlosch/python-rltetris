@@ -16,11 +16,15 @@ class WorldFeedback(object):
 class RLLearner(object):
     _moves = [key.MOTION_DOWN, key.MOTION_LEFT, key.MOTION_RIGHT, key.MOTION_UP]  # Do nothing, Move left, Move right
 
-    def __init__(self, board, worldfeedback, learningrate, discountfactor):
+    def __init__(self, board, worldfeedback, learningrate, discountfactor, epsilon):
         self.board = board
         self.feedback = worldfeedback
         self.lr = learningrate
         self.gamma = discountfactor
+        self.epsilon = epsilon
+
+    def newpiece(self):
+        pass
 
     def reset(self):
         pass
@@ -32,7 +36,7 @@ class RLLearner(object):
 class QLearner(RLLearner):
 
     def __init__(self, board, worldfeedback, learningrate=0.01, discountfactor=0.6, epsilon=0.1):
-        super(QLearner, self).__init__(board, worldfeedback, learningrate, discountfactor)
+        super(QLearner, self).__init__(board, worldfeedback, learningrate, discountfactor, epsilon)
         self.epsilon = epsilon
 
         self.lastState = None
@@ -151,8 +155,8 @@ class SarsaLambdaLearner(QLearner):
 
 
 class DeepQLearner(RLLearner):
-    def __init__(self, board, worldfeedback, learningrate=0.01, discountfactor=0.6, rho=0.99, rms_epsilon=1e-6):
-        super(DeepQLearner, self).__init__(board, worldfeedback, learningrate, discountfactor)
+    def __init__(self, board, worldfeedback, learningrate=0.01, discountfactor=0.6, epsilon=0.1, rho=0.99, rms_epsilon=1e-6):
+        super(DeepQLearner, self).__init__(board, worldfeedback, learningrate, discountfactor, epsilon)
 
         input_scale = 2.0
 
@@ -167,14 +171,15 @@ class DeepQLearner(RLLearner):
         self.reward_shared = theano.shared(np.zeros((1,1), dtype=theano.config.floatX), broadcastable=(False, True))
 
         model = lasagne.layers.InputLayer(shape=(1, 1, board.height, board.width))
-        model = lasagne.layers.Conv2DLayer(model, 24, 3, pad=1)
-        model = lasagne.layers.Conv2DLayer(model, 48, 3, pad=1)
-        model = lasagne.layers.Conv2DLayer(model, 12, 3, pad=1)
-        model = lasagne.layers.DenseLayer(model, 256)
+        model = lasagne.layers.Conv2DLayer(model, 24, 3, pad=1, W=lasagne.init.HeUniform(), b=lasagne.init.Constant(.1))
+        model = lasagne.layers.Conv2DLayer(model, 48, 3, pad=1, W=lasagne.init.HeUniform(), b=lasagne.init.Constant(.1))
+        model = lasagne.layers.Conv2DLayer(model, 12, 3, pad=1, W=lasagne.init.HeUniform(), b=lasagne.init.Constant(.1))
+        model = lasagne.layers.DenseLayer(model, 256, W=lasagne.init.HeUniform(), b=lasagne.init.Constant(.1))
         #model = lasagne.layers.DropoutLayer(model, 0.5)
-        model = lasagne.layers.DenseLayer(model, 256)
+        model = lasagne.layers.DenseLayer(model, 256, W=lasagne.init.HeUniform(), b=lasagne.init.Constant(.1))
         #model = lasagne.layers.DropoutLayer(model, 0.5)
-        model = lasagne.layers.DenseLayer(model, len(self._moves), nonlinearity=lasagne.nonlinearities.identity)
+        model = lasagne.layers.DenseLayer(model, len(self._moves), W=lasagne.init.HeUniform(), b=lasagne.init.Constant(.1)
+                                          , nonlinearity=lasagne.nonlinearities.identity)
 
         lastQvals = lasagne.layers.get_output(model, last_state / input_scale)
         Qvals = lasagne.layers.get_output(model, state / input_scale)
@@ -213,43 +218,22 @@ class DeepQLearner(RLLearner):
         self.state_shared.set_value(state)
 
         reward = np.zeros((1,1), dtype=theano.config.floatX)
-        reward[0] = self.feedback.getreward()
+        reward[0][0] = self.feedback.getreward()
 
         self.last_action_shared.set_value(self.last_action)
         self.reward_shared.set_value(reward)
 
         loss, qvals = self.train_fn()
 
-        print(loss)
+        if loss != loss:
+            print(loss)
 
-        np.argmax(qvals, self.last_action)
+        if random.random() < self.epsilon:
+            a = random.randint(0, len(self._moves)-1)
+        else:
+            a = np.argmax(qvals)
+
+        self.last_action[0][0] = a
         self.last_state = state
 
-        return self.last_action
-
-# def _updatevalue(self, state, action, reward):
-#     # Q-Learning always updates with the argmax action:
-#     action = np.argmax(self.policy[state])
-#     self.policy[self.lastState][self.lastAction] += self.lr * (reward + self.gamma * self.policy[state][action] - self.policy[self.lastState][self.lastAction])
-#
-# def step(self):
-#     # encode board into state
-#     state = self.board.encode()
-#
-#     # choose action from policy table
-#     if state not in self.policy:
-#         self._createpolicyentry(state)
-#
-#     action = self._nextaction(state)
-#
-#     reward = self.feedback.getreward()
-#
-#     # print(len(self.policy), state)
-#     # print(len(self.policy), self.policy[state], reward)
-#
-#     self._updatevalue(state, action, reward)
-#
-#     self.lastState = state
-#     self.lastAction = action
-#
-#     return self._moves[action]
+        return self._moves[a]

@@ -20,8 +20,8 @@ Change BOARD_WIDTH and BOARD_HEIGHT to define the size of the game board.
 
 Change learner (in the middle of this file) to define which algorithm is used ( currently either Q or SARSA(lambda) )
 """
-DRAW = True
-UPDATE_INTERVAL = 0.1
+DRAW = False
+UPDATE_INTERVAL = 0.05
 PLOT = False
 
 BOARD_WIDTH = 6
