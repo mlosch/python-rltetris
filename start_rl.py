@@ -65,13 +65,17 @@ if PLOT:
 game = RLGame(window, board, 1)
 #learner = SarsaLearner(board, game, learningrate=0.1, epsilon=0.0, discountfactor=0.7)
 #learner = QLearner(board, game, learningrate=0.1, epsilon=0.05, discountfactor=0.7)
-learner = SarsaLambdaLearner(board, game, learningrate=0.1, epsilon=0.0, lam=0.9, discountfactor=0.7)
+learner = SarsaLambdaLearner(board, game, learningrate=0.01, epsilon=0.0, lam=0.9, discountfactor=0.7)
 
 # Load an existing policy if available
 files = glob.glob('policy-*.pickle')
 if files and len(files) > 0:
     print('Loading policy from file: '+files[-1])
+    file = files[-1]
+    file = file[file.find('-')+1:file.find('.')]
+    policy_iter = int(file)
     learner.policy = pickle.load(open(files[-1], 'r'))
+    game._gamecounter = policy_iter
 
 if DRAW:
     @window.event
