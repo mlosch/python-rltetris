@@ -66,7 +66,7 @@ game = RLGame(window, board, 1)
 #learner = SarsaLearner(board, game, learningrate=0.1, epsilon=0.0, discountfactor=0.7)
 #learner = QLearner(board, game, learningrate=0.1, epsilon=0.05, discountfactor=0.7)
 #learner = SarsaLambdaLearner(board, game, learningrate=0.1, epsilon=0.0, lam=0.9, discountfactor=0.7)
-learner = DeepQLearner(board, game, learningrate=0.0002, discountfactor=0.95)
+learner = DeepQLearner(board, game, learningrate=0.0002, discountfactor=0.95, epsilon=0.1, depsilon=1e-6)
 
 # Load an existing policy if available
 files = glob.glob('policy-*.pickle')
@@ -127,7 +127,7 @@ def update(dt):
                 plot.newscore(lastgame, avgscore)
                 plot.plot()
 
-            print('Game: %d, Min score: %d, Max score: %d, Avg score: %f'%(game._gamecounter, min(lastscores), max(lastscores), avgscore))
+            print('Game: %d, Min score: %d, Max score: %d, Avg score: %f, Eps: %.3f'%(game._gamecounter, min(lastscores), max(lastscores), avgscore, learner.epsilon))
             lastscores = []
         lastscores.append(0)
     # plot.plot()
