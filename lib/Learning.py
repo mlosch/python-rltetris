@@ -156,8 +156,9 @@ class SarsaLambdaLearner(QLearner):
 
 
 class DeepQLearner(RLLearner):
-    def __init__(self, board, worldfeedback, learningrate=0.01, discountfactor=0.6, epsilon=0.1, rho=0.99, rms_epsilon=1e-6, batchsize=32):
+    def __init__(self, board, worldfeedback, learningrate=0.01, discountfactor=0.6, epsilon=0.1, depsilon=0.0, rho=0.99, rms_epsilon=1e-6, batchsize=32):
         super(DeepQLearner, self).__init__(board, worldfeedback, learningrate, discountfactor, epsilon)
+        self.depsilon = depsilon
 
         input_scale = 2.0
 
@@ -178,7 +179,6 @@ class DeepQLearner(RLLearner):
         model = lasagne.layers.Conv2DLayer(model, 24, 3, pad=1, W=lasagne.init.HeUniform(), b=lasagne.init.Constant(.1))
         model = lasagne.layers.Conv2DLayer(model, 48, 3, pad=1, W=lasagne.init.HeUniform(), b=lasagne.init.Constant(.1))
         model = lasagne.layers.Conv2DLayer(model, 12, 3, pad=1, W=lasagne.init.HeUniform(), b=lasagne.init.Constant(.1))
-        model = lasagne.layers.DenseLayer(model, 256, W=lasagne.init.HeUniform(), b=lasagne.init.Constant(.1))
         model = lasagne.layers.DenseLayer(model, 256, W=lasagne.init.HeUniform(), b=lasagne.init.Constant(.1))
         model = lasagne.layers.DenseLayer(model, len(self._moves), W=lasagne.init.HeUniform(), b=lasagne.init.Constant(.1)
                                           , nonlinearity=lasagne.nonlinearities.identity)
@@ -222,8 +222,6 @@ class DeepQLearner(RLLearner):
         state = self.board.encode_image()
         reward = self.feedback.getreward()
 
-        qvals = None
-
         self.replaybuf.append((self.last_state, self.last_action, reward, state))
 
         if len(self.replaybuf) >= self.batchsize:
@@ -253,6 +251,8 @@ class DeepQLearner(RLLearner):
             a = random.randint(0, len(self._moves)-1)
         else:
             a = self._getaction(state)
+
+        self.epsilon = max(0, self.epsilon - self.depsilon)
 
         self.last_action = a
         self.last_state = state
