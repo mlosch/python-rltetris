@@ -3,6 +3,7 @@ from pyglet.window import key
 import random
 import util
 import math
+import Replay
 
 import theano
 import theano.tensor as T
@@ -155,29 +156,30 @@ class SarsaLambdaLearner(QLearner):
 
 
 class DeepQLearner(RLLearner):
-    def __init__(self, board, worldfeedback, learningrate=0.01, discountfactor=0.6, epsilon=0.1, rho=0.99, rms_epsilon=1e-6):
+    def __init__(self, board, worldfeedback, learningrate=0.01, discountfactor=0.6, epsilon=0.1, rho=0.99, rms_epsilon=1e-6, batchsize=32):
         super(DeepQLearner, self).__init__(board, worldfeedback, learningrate, discountfactor, epsilon)
 
         input_scale = 2.0
+
+        self.replaybuf = Replay.Replay(1000)
+        self.batchsize = batchsize
 
         last_state = T.tensor4('last_state')
         last_action = T.icol('last_action')
         state = T.tensor4('state')
         reward = T.col('reward')
 
-        self.state_shared = theano.shared(np.zeros((1,1,board.height, board.width), dtype=theano.config.floatX))
-        self.last_state_shared = theano.shared(np.zeros((1,1,board.height, board.width), dtype=theano.config.floatX))
-        self.last_action_shared = theano.shared(np.zeros((1,1), dtype='int32'), broadcastable=(False, True))
-        self.reward_shared = theano.shared(np.zeros((1,1), dtype=theano.config.floatX), broadcastable=(False, True))
+        self.state_shared = theano.shared(np.zeros((batchsize,1,board.height, board.width), dtype=theano.config.floatX))
+        self.last_state_shared = theano.shared(np.zeros((batchsize,1,board.height, board.width), dtype=theano.config.floatX))
+        self.last_action_shared = theano.shared(np.zeros((batchsize,1), dtype='int32'), broadcastable=(False, True))
+        self.reward_shared = theano.shared(np.zeros((batchsize,1), dtype=theano.config.floatX), broadcastable=(False, True))
 
-        model = lasagne.layers.InputLayer(shape=(1, 1, board.height, board.width))
+        model = lasagne.layers.InputLayer(shape=(batchsize, 1, board.height, board.width))
         model = lasagne.layers.Conv2DLayer(model, 24, 3, pad=1, W=lasagne.init.HeUniform(), b=lasagne.init.Constant(.1))
         model = lasagne.layers.Conv2DLayer(model, 48, 3, pad=1, W=lasagne.init.HeUniform(), b=lasagne.init.Constant(.1))
         model = lasagne.layers.Conv2DLayer(model, 12, 3, pad=1, W=lasagne.init.HeUniform(), b=lasagne.init.Constant(.1))
         model = lasagne.layers.DenseLayer(model, 256, W=lasagne.init.HeUniform(), b=lasagne.init.Constant(.1))
-        #model = lasagne.layers.DropoutLayer(model, 0.5)
         model = lasagne.layers.DenseLayer(model, 256, W=lasagne.init.HeUniform(), b=lasagne.init.Constant(.1))
-        #model = lasagne.layers.DropoutLayer(model, 0.5)
         model = lasagne.layers.DenseLayer(model, len(self._moves), W=lasagne.init.HeUniform(), b=lasagne.init.Constant(.1)
                                           , nonlinearity=lasagne.nonlinearities.identity)
 
@@ -186,7 +188,7 @@ class DeepQLearner(RLLearner):
         Qvals = theano.gradient.disconnected_grad(Qvals)
 
         delta = reward + self.gamma * T.max(Qvals, axis=1, keepdims=True) - \
-                lastQvals[T.arange(1), last_action.reshape((-1,))].reshape((-1,1))
+                lastQvals[T.arange(batchsize), last_action.reshape((-1,))].reshape((-1,1))
 
         loss = T.mean(0.5 * delta ** 2)
 
@@ -204,36 +206,55 @@ class DeepQLearner(RLLearner):
         self.Qvals = theano.function([], Qvals, givens={state: self.state_shared})
 
         self.last_state = self.board.encode_image()
-        self.last_state = self.last_state[np.newaxis, np.newaxis, ...]
-        self.last_action = np.zeros((1, 1), dtype='int32')
+        self.last_action = 0
 
     def reset(self):
         pass
 
+    def _getaction(self, state):
+        states = np.zeros((self.batchsize, 1, self.board.height,
+                           self.board.width), dtype=theano.config.floatX)
+        states[0, 0, ...] = state
+        self.state_shared.set_value(states)
+        return np.argmax(self.Qvals()[0])
+
     def step(self):
         state = self.board.encode_image()
-        state = state[np.newaxis, np.newaxis, ...]
+        reward = self.feedback.getreward()
 
-        self.last_state_shared.set_value(self.last_state)
-        self.state_shared.set_value(state)
+        qvals = None
 
-        reward = np.zeros((1,1), dtype=theano.config.floatX)
-        reward[0][0] = self.feedback.getreward()
+        self.replaybuf.append((self.last_state, self.last_action, reward, state))
 
-        self.last_action_shared.set_value(self.last_action)
-        self.reward_shared.set_value(reward)
+        if len(self.replaybuf) >= self.batchsize:
+            # do some actual training
+            replay = self.replaybuf.sample(self.batchsize)
+            W, H = self.board.width, self.board.height
 
-        loss, qvals = self.train_fn()
+            last_states = np.zeros((len(replay), 1, H, W), dtype=theano.config.floatX)
+            states = np.zeros((len(replay), 1, H, W), dtype=theano.config.floatX)
+            last_actions = np.zeros((len(replay), 1), dtype='int32')
+            rewards = np.zeros((len(replay), 1), dtype=theano.config.floatX)
 
-        if loss != loss:
-            print(loss)
+            for i, r in enumerate(replay):
+                last_states[i], last_actions[i], rewards[i], states[i] = replay[i]
+
+            self.last_state_shared.set_value(last_states)
+            self.state_shared.set_value(states)
+            self.reward_shared.set_value(rewards)
+            self.last_action_shared.set_value(last_actions)
+
+            loss, qvals = self.train_fn()
+
+            if loss != loss:
+                print(loss)
 
         if random.random() < self.epsilon:
             a = random.randint(0, len(self._moves)-1)
         else:
-            a = np.argmax(qvals)
+            a = self._getaction(state)
 
-        self.last_action[0][0] = a
+        self.last_action = a
         self.last_state = state
 
         return self._moves[a]
