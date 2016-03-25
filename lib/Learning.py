@@ -31,7 +31,7 @@ class RLLearner(object):
     def reset(self):
         pass
 
-    def update(self, gameover=False, newpiece=False):
+    def update(self, state, gameover, newpiece):
         pass
 
     def takeaction(self, state):
@@ -58,11 +58,11 @@ class QLearner(RLLearner):
 
         self.policy = {}
 
-    def dump(self, file):
-        pickle.dump(self.policy, open(file, 'w'), -1)
+    def dump(self, f):
+        pickle.dump(self.policy, open(f, 'w'), -1)
 
-    def load(self, file):
-        self.policy = pickle.load(open(file, 'r'))
+    def load(self, f):
+        self.policy = pickle.load(open(f, 'r'))
 
     def _createpolicyentry(self, state):
         self.policy[state] = np.random.rand(len(self._moves))
@@ -184,9 +184,7 @@ class DeepQLearner(RLLearner):
         self.depsilon = depsilon
         self.minepsilon = minepsilon
 
-        input_scale = 2.0
-
-        self.replaybuf = Replay.Replay(1000)
+        self.replaybuf = Replay.Replay(1000000)
         self.batchsize = batchsize
 
         last_state = T.tensor4('last_state')
@@ -213,8 +211,8 @@ class DeepQLearner(RLLearner):
                                           b=lasagne.init.Constant(.1),
                                           nonlinearity=lasagne.nonlinearities.identity)
 
-        lastQvals = lasagne.layers.get_output(model, last_state / input_scale)
-        Qvals = lasagne.layers.get_output(model, state / input_scale)
+        lastQvals = lasagne.layers.get_output(model, last_state)
+        Qvals = lasagne.layers.get_output(model, state)
         Qvals = theano.gradient.disconnected_grad(Qvals)
 
         delta = reward + \
@@ -242,13 +240,16 @@ class DeepQLearner(RLLearner):
 
         self.avgloss = []
 
-    def dump(self, file):
+    def dump(self, f):
         values = lasagne.layers.get_all_param_values(self.model)
-        pickle.dump(values, open(file, 'w'), -1)
+        state = {'epsilon': self.epsilon, 'replay': self.replaybuf}
+        pickle.dump({'values': values, 'state': state}, open(f, 'w'), -1)
 
-    def load(self, file):
-        values = pickle.load(open(file, 'r'))
-        lasagne.layers.set_all_param_values(self.model, values)
+    def load(self, f):
+        data = pickle.load(open(f, 'r'))
+        lasagne.layers.set_all_param_values(self.model, data['values'])
+        self.replaybuf = data['state']['replay']
+        self.epsilon = data['state']['epsilon']
 
     def takeaction(self, state):
         states = np.zeros((self.batchsize, 1, self.board.height,
@@ -277,7 +278,8 @@ class DeepQLearner(RLLearner):
 
         self.replaybuf.append((self.last_state, self.action, reward, state, terminal))
 
-        if len(self.replaybuf) >= self.batchsize:
+        # gather 100 samples before starting the training
+        if len(self.replaybuf) >= 100:
             # do some actual training
             replay = self.replaybuf.sample(self.batchsize)
             W, H = self.board.width, self.board.height
@@ -304,4 +306,4 @@ class DeepQLearner(RLLearner):
             if loss != loss:
                 print(loss)
 
-        self.epsilon = max(self.minepsilon, self.epsilon - self.depsilon)
+            self.epsilon = max(self.minepsilon, self.epsilon - self.depsilon)
