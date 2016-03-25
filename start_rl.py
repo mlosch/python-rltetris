@@ -63,16 +63,23 @@ if PLOT:
     plot = Scoreplot()
 
 game = RLGame(window, board, 1)
-#learner = SarsaLearner(board, game, learningrate=0.1, epsilon=0.0, discountfactor=0.7)
-#learner = QLearner(board, game, learningrate=0.1, epsilon=0.05, discountfactor=0.7)
-#learner = SarsaLambdaLearner(board, game, learningrate=0.1, epsilon=0.0, lam=0.9, discountfactor=0.7)
-learner = DeepQLearner(board, game, learningrate=0.0002, discountfactor=0.95, epsilon=0.1, depsilon=1e-6)
+# learner = SarsaLearner(board, game, learningrate=0.1, epsilon=0.0, discountfactor=0.7)
+# learner = QLearner(board, game, learningrate=0.1, epsilon=0.05, discountfactor=0.7)
+# learner = SarsaLambdaLearner(board, game, learningrate=0.1, epsilon=0.0, lam=0.9, discountfactor=0.7)
+# boardencoding = board.encode
+
+learner = DeepQLearner(board, game, learningrate=0.0002, discountfactor=0.95, epsilon=1.0, depsilon=1e-7)
+#learner = DeepQLearner(board, game, learningrate=0.0002, discountfactor=0.95, epsilon=0.0, depsilon=0, minepsilon=0)
+boardencoding = board.encode_image
+
+global state
+state = boardencoding()
 
 # Load an existing policy if available
 files = glob.glob('policy-*.pickle')
 if files and len(files) > 0:
     print('Loading policy from file: '+files[-1])
-    learner.policy = pickle.load(open(files[-1], 'r'))
+    learner.load(files[-1])
 
 if DRAW:
     @window.event
@@ -91,13 +98,24 @@ if DRAW:
 
 
 def update(dt):
-    # do some serious learning here
-    action = learner.step()
+
+    global state
+
+    # choose action
+    action = learner.takeaction(state)
+
     # perform the action on the board
     board.move_piece(action)
 
     # update game
     game.cycle()
+
+    # encode board into next state
+    state = boardencoding()
+
+
+    gameover = False
+    newpiece = False
 
     # collect statistics
     global lastgame
@@ -105,7 +123,7 @@ def update(dt):
 
     if game.lines > 0 and game.lines != lastscores[-1]:
         # announce new piece to learner
-        learner.newpiece()
+        newpiece = True
 
     if game.lines > 0:
         if game.lines != lastscores[-1]:
@@ -120,6 +138,9 @@ def update(dt):
                 learner.reset()
 
     if game._gamecounter > lastgame:
+
+        gameover = True
+
         lastgame = game._gamecounter
         if game._gamecounter % 100 == 0:
             avgscore = sum(lastscores)/float(len(lastscores))
@@ -127,10 +148,13 @@ def update(dt):
                 plot.newscore(lastgame, avgscore)
                 plot.plot()
 
-            print('Game: %d, Min score: %d, Max score: %d, Avg score: %f, Eps: %.3f'%(game._gamecounter, min(lastscores), max(lastscores), avgscore, learner.epsilon))
+            print('Game: %d, Min score: %d, Max score: %d, Avg score: %f, Eps: %.3f, Avg. loss: %.5f'%(game._gamecounter, min(lastscores), max(lastscores), avgscore, learner.epsilon, learner.getavgloss()))
             lastscores = []
         lastscores.append(0)
     # plot.plot()
+
+    # update learner
+    learner.update(state, newpiece, gameover)
 
 try:
     if DRAW:
@@ -143,5 +167,5 @@ except KeyboardInterrupt:
     print('Interrupted')
     # save policy
     filename = 'policy-%d.pickle'%game._gamecounter
-    pickle.dump(learner.policy, open(filename, 'w'), -1)
+    learner.dump(filename)
     print('Policy saved to: '+filename)

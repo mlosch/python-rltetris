@@ -73,12 +73,12 @@ class RLGame(Game, WorldFeedback):
 
 
     _rewardcarriage = 0
-    _gamecounter = 0
+    _gamecounter = -1  # -1 as .reset() is called once on construction which increments this counter
 
     def getreward(self):
         reward = self._rewardcarriage
         self._rewardcarriage = 0
-        return reward
+        return reward - 1
 
     def should_update(self):
         self.ticks += 1
