@@ -267,12 +267,11 @@ class DeepQLearner(RLLearner):
         return self._moves[a]
 
     def getavgloss(self):
-        return np.mean(self.avgloss)
+        avgloss = np.mean(self.avgloss)
+        self.avgloss = []
+        return avgloss
 
     def update(self, state, gameover, newpiece):
-        if gameover:
-            self.avgloss = []
-
         terminal = 0 if gameover else 1
         reward = self.feedback.getreward()
 

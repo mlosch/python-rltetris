@@ -21,11 +21,11 @@ Change BOARD_WIDTH and BOARD_HEIGHT to define the size of the game board.
 Change learner (in the middle of this file) to define which algorithm is used ( currently either Q or SARSA(lambda) )
 """
 DRAW = False
-UPDATE_INTERVAL = 0.05
+UPDATE_INTERVAL = 0.1
 PLOT = False
 
-BOARD_WIDTH = 6
-BOARD_HEIGHT = 12
+BOARD_WIDTH = 14
+BOARD_HEIGHT = 20
 
 
 global lastgame
@@ -68,8 +68,7 @@ game = RLGame(window, board, 1)
 # learner = SarsaLambdaLearner(board, game, learningrate=0.1, epsilon=0.0, lam=0.9, discountfactor=0.7)
 # boardencoding = board.encode
 
-learner = DeepQLearner(board, game, learningrate=0.0002, discountfactor=0.95, epsilon=1.0, depsilon=1e-7)
-#learner = DeepQLearner(board, game, learningrate=0.0002, discountfactor=0.95, epsilon=0.0, depsilon=0, minepsilon=0)
+learner = DeepQLearner(board, game, learningrate=0.0002, discountfactor=0.95, epsilon=1.0, minepsilon=0, depsilon=1e-7)
 boardencoding = board.encode_image
 
 global state
@@ -79,6 +78,9 @@ state = boardencoding()
 files = glob.glob('policy-*.pickle')
 if files and len(files) > 0:
     print('Loading policy from file: '+files[-1])
+    file = files[-1]
+    file = file[file.find('-')+1:file.find('.')]
+    game._gamecounter = int(file)
     learner.load(files[-1])
 
 if DRAW:
@@ -156,14 +158,26 @@ def update(dt):
     # update learner
     learner.update(state, newpiece, gameover)
 
+# import cProfile, pstats, cStringIO
+# pr = cProfile.Profile()
+
 try:
     if DRAW:
         pyglet.clock.schedule_interval(update, UPDATE_INTERVAL)
         pyglet.app.run()
     else:
+        # pr.enable()
         while 1:
             update(0)
 except KeyboardInterrupt:
+    # pr.disable()
+    # s = cStringIO.StringIO()
+    # sortby = 'cumulative'
+    # ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
+    # ps.print_stats()
+    # with open('profile_stats.txt', 'w') as f:
+    #     f.write(s.getvalue())
+
     print('Interrupted')
     # save policy
     filename = 'policy-%d.pickle'%game._gamecounter
